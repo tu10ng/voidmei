@@ -7,16 +7,11 @@ import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import java.io.IOException;
 
 import com.alee.laf.label.WebLabel;
 import com.alee.laf.panel.WebPanel;
 import com.alee.laf.rootpane.WebFrame;
 import com.alee.laf.text.WebTextArea;
-import com.github.kwhat.jnativehook.GlobalScreen;
-import com.github.kwhat.jnativehook.NativeHookException;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import com.voidmei.App;
 import com.voidmei.controller;
 import com.voidmei.parser.blkx;
@@ -69,8 +64,8 @@ public class someUsefulData extends WebFrame implements Runnable {
 			FontName = xc.getconfig("flightInfoFontC");
 		Font f;
 		if (!FontName.isEmpty()) {
-//			App.debugPrint(FontName);
-			f = new Font(FontName, Font.PLAIN, 13);
+			// App.debugPrint(FontName);
+			f = new Font(FontName, Font.BOLD, 13);
 		} else {
 			f = App.defaultFont;
 		}
@@ -82,7 +77,7 @@ public class someUsefulData extends WebFrame implements Runnable {
 
 		textArea.setFont(f);
 		
-		textArea.setBackground(new Color(250, 250, 250, 85));
+		// textArea.setBackground(new Color(250, 250, 250, 85));
 		
 //		 title = new WebLabel(""/*,I*/);
 ////		 title.setHorizontalAlignment(SwingConstants.TOP);
@@ -199,7 +194,7 @@ public class someUsefulData extends WebFrame implements Runnable {
 		while (doit) {
 			if (App.displayFm) {
 				textArea.setText(xp.fmdata);
-				textArea.setBackground(new Color(250, 250, 250, 85));
+				textArea.setBackground(new Color(250, 250, 250, 150));
 			} else {
 				textArea.setText("");
 				textArea.setBackground(new Color(0, 0, 0, 0));
