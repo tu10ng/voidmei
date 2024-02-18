@@ -111,7 +111,7 @@ scoop install Lutra-Fs_scoop-bucket/voidmei
 
 版本升级请用该命令
 ```
-scoop update voidmei
+scoop update voidmei -f
 ```
 
 ## Linux执行环境配置 

@@ -18,7 +18,13 @@
     <path>%JAVA_HOME%;%PATH%</path>
     <requiresJdk>false</requiresJdk>
     <requires64Bit>false</requires64Bit>
-    <minVersion></minVersion>
+    <minVersion>1.8.0</minVersion>
     <maxVersion></maxVersion>
   </jre>
+  <messages>
+    <startupErr>startupErr</startupErr>
+    <jreNotFoundErr>jreNotFoundErr didnt find jre in %JAVA_HOME%;%PATH%</jreNotFoundErr>
+    <jreVersionErr>jreVersionErr need jre</jreVersionErr>
+    <launcherErr>launcherErr</launcherErr>
+  </messages>
 </launch4jConfig>
