@@ -799,7 +799,16 @@ public class controller {
 
 		// someUsefulData (Unpacked Info)
 		if (Boolean.parseBoolean(getconfig("enableFMPrint"))) {
-			// 确保 blkx 已初始化以便预览
+			// 尝试从 8111 端口获取当前飞机型号
+			httpHelper hh = new httpHelper();
+			String livePlaneName = hh.getLiveAircraftType();
+
+			if (livePlaneName != null) {
+				// app.debugPrint("Preview live plane: " + livePlaneName);
+				getfmdata(livePlaneName);
+			}
+
+			// 确保 blkx 已初始化以便预览 (Fallback to config)
 			if (blkx == null) {
 				String planeName = getconfig("selectedFM0");
 				if (planeName != null && !planeName.isEmpty()) {
