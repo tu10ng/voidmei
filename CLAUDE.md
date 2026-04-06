@@ -233,6 +233,8 @@ Use `AlwaysOnTopCoordinator` singleton to manage overlay z-order and dialog coor
 
 **焦点抢占防护：** 1) `setFocusable(false)` 必须在 `registerOverlay()` 之前; 2) 循环中检查 `!isVisible()` 后才调用 `setVisible(true)`。
 
+**僵尸窗口防护：** 所有注册的窗口必须在 `dispose()` 中调用 `unregisterOverlay(this)`，否则 `FocusMonitor` 的 `showAllOverlays()` 会复活已销毁的窗口。`AlwaysOnTopCoordinator` 内部使用 `isDisplayable()` 检查作为全局防护。
+
 ### Focus Monitor (游戏失焦自动隐藏)
 
 `FocusMonitor` (200ms节流) + `FocusDetector` (跨平台检测) 实现Alt+Tab时自动隐藏overlay。复用Service的~10Hz轮询，无新线程。

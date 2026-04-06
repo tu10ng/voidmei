@@ -77,6 +77,7 @@ overlay.reinitConfig()
 overlay.dispose()
 ```
 - **CRITICAL**: Unregister from `FlightDataBus`
+- **CRITICAL**: Unregister from `AlwaysOnTopCoordinator` (if registered)
 - Stop background threads
 - Release resources
 - Called when exiting game mode or closing preview
@@ -110,6 +111,8 @@ public class MyOverlay extends BaseOverlay implements FlightDataListener {
     public void dispose() {
         // CRITICAL: Unregister to prevent zombie listeners
         FlightDataBus.getInstance().unregister(this);
+        // CRITICAL: Unregister from AlwaysOnTopCoordinator to prevent zombie windows
+        AlwaysOnTopCoordinator.getInstance().unregisterOverlay(this);
         super.dispose();
     }
 }
@@ -381,6 +384,7 @@ public void onFlightData(FlightDataEvent event) {
 | Issue | Symptom | Solution |
 |-------|---------|----------|
 | Zombie Listeners | Memory leaks, crashes after closing | Always unregister from `FlightDataBus` in `dispose()` |
+| Zombie Windows | Disposed windows reappear after Alt+Tab | Always unregister from `AlwaysOnTopCoordinator` in `dispose()` |
 | EDT Violations | Random UI corruption, freezes | Use `SwingUtilities.invokeLater()` for all UI updates |
 | Interest Mismatch | WYSIWYG preview doesn't update | Add config keys to `.withInterest()` |
 | Preview Without Data | NullPointerException in preview | Check `isPreview` flag, use mock data |
@@ -610,6 +614,7 @@ For full documentation, see: [`../util/CLAUDE.md`](../util/CLAUDE.md)
 - `DrawFrameSimpl` 需要 `Controller` 引用来访问 `getBlkx()` 和 `Service`
 - 配置保存使用 `xc.getConfigProvider().setConfig()` 而不是直接 `xc.setConfig()`
 - 新的 overlay 应该扩展 `DraggableOverlay` 并遵循标准生命周期
+- **必须在 `dispose()` 中调用 `AlwaysOnTopCoordinator.getInstance().unregisterOverlay(this)`** 防止僵尸窗口
 
 See `MiniHUDOverlay` for a modern event-driven implementation pattern.
 

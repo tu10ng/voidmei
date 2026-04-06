@@ -51,6 +51,8 @@ public class DrawFrame extends WebFrame implements Runnable {
 	public void dispose() {
 		prog.util.Logger.info("Overlay",
 				"Disposing instance: " + this.getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()));
+		// 在销毁前从 AlwaysOnTopCoordinator 注销，防止僵尸窗口复活
+		AlwaysOnTopCoordinator.getInstance().unregisterOverlay(this);
 		super.dispose();
 	}
 

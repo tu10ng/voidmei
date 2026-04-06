@@ -136,7 +136,7 @@ public class AlwaysOnTopCoordinator {
         cleanupDeadReferences();
         for (WeakReference<Window> ref : overlays) {
             Window w = ref.get();
-            if (w != null) {
+            if (w != null && w.isDisplayable()) {
                 setAlwaysOnTopOnEDT(w, false);
             }
         }
@@ -149,7 +149,7 @@ public class AlwaysOnTopCoordinator {
         cleanupDeadReferences();
         for (WeakReference<Window> ref : overlays) {
             Window w = ref.get();
-            if (w != null) {
+            if (w != null && w.isDisplayable()) {
                 setAlwaysOnTopOnEDT(w, true);
             }
         }
@@ -204,7 +204,7 @@ public class AlwaysOnTopCoordinator {
         cleanupDeadReferences();
         for (WeakReference<Window> ref : overlays) {
             Window w = ref.get();
-            if (w != null && w.isVisible()) {
+            if (w != null && w.isDisplayable() && w.isVisible()) {
                 setVisibleOnEDT(w, false);
             }
         }
@@ -225,7 +225,7 @@ public class AlwaysOnTopCoordinator {
         cleanupDeadReferences();
         for (WeakReference<Window> ref : overlays) {
             Window w = ref.get();
-            if (w != null) {
+            if (w != null && w.isDisplayable()) {
                 setVisibleOnEDT(w, true);
             }
         }

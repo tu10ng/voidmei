@@ -122,6 +122,13 @@ public class StatusBar extends WebFrame implements Runnable {
 
 	}
 
+	@Override
+	public void dispose() {
+		// 在销毁前从 AlwaysOnTopCoordinator 注销，防止僵尸窗口复活
+		AlwaysOnTopCoordinator.getInstance().unregisterOverlay(this);
+		super.dispose();
+	}
+
 	public void S1() {
 		statusLabel.setText(Lang.sWait);
 		repaint();
