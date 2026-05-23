@@ -2046,6 +2046,28 @@ public class Service implements Runnable, ui.model.TelemetrySource {
 		return sWepTimeVal;
 	}
 
+	// === 火箭助推器 (Issue #52) ===
+
+	@Override
+	public double getBoosterFuelKg() {
+		// 无助推器时 mfuel_1 为 -65535，返回 0
+		if (sState == null || sState.mfuel_1 <= 0) return 0;
+		return sState.mfuel_1;
+	}
+
+	@Override
+	public double getBoosterFuelPercent() {
+		// 计算助推器剩余百分比 = 当前助推燃料 / 助推燃料总量 * 100
+		if (sState == null || sState.mfuel0_1 <= 0) return 0;
+		return Math.min(100, 100 * sState.mfuel_1 / sState.mfuel0_1);
+	}
+
+	@Override
+	public boolean hasBooster() {
+		// mfuel_1 > 0 说明当前有助推器燃料，即有助推器系统
+		return sState != null && sState.mfuel_1 > 0 && sState.mfuel0_1 > 0;
+	}
+
 	@Override
 	public double getHeatTolerance() {
 		// 直接返回原始值，UI层通过 :na-when 表达式过滤无效值

@@ -40,6 +40,7 @@ public class State {
 	public double mfuel;
 	public double mfuel_1;
 	public double mfuel0;
+	public double mfuel0_1;  // 助推器燃料总量 (kg)，无助推器时为 -65535
 	public double pitch[];
 	public int thrust[];
 	public double efficiency[];
@@ -106,6 +107,7 @@ public class State {
 			mfuel = StringHelper.getDataFloat(StringHelper.getString(buf, "Mfuel"));
 			mfuel_1 = StringHelper.getDataFloat(StringHelper.getString(buf, "Mfuel 1"));
 			mfuel0 = StringHelper.getDataFloat(StringHelper.getString(buf, "Mfuel0"));
+			mfuel0_1 = StringHelper.getDataFloat(StringHelper.getString(buf, "Mfuel0 1"));  // 助推器燃料总量
 
 			oiltemp = StringHelper.getDataFloat(StringHelper.getString(buf, "oil temp"));
 

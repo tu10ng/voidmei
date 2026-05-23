@@ -208,6 +208,10 @@ public class VisibilityExpressionEvaluator {
             case "hasWep":
                 return source.hasWep();
 
+            // 火箭助推器
+            case "hasBooster":
+                return source.hasBooster();
+
             // 未知方法：默认显示
             default:
                 return true;

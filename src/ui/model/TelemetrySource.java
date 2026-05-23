@@ -207,4 +207,26 @@ public interface TelemetrySource {
      * @return true 如果有加力系统，false 如果没有或 FM 不可用
      */
     boolean hasWep();
+
+    // === 火箭助推器 (Issue #52) ===
+
+    /**
+     * 获取火箭助推器当前剩余燃料质量 (kg)
+     * 无助推器时返回 0
+     */
+    double getBoosterFuelKg();
+
+    /**
+     * 获取火箭助推器剩余燃料百分比 (0-100)
+     * 计算公式: 100 * mfuel_1 / mfuel0_1
+     * 无助推器时返回 0
+     */
+    double getBoosterFuelPercent();
+
+    /**
+     * 判断飞机是否有火箭助推器系统
+     * 通过检查 API 返回的 Mfuel 1 和 Mfuel0 1 是否有效（> 0）
+     * @return true 如果有助推器系统，false 如果没有
+     */
+    boolean hasBooster();
 }
