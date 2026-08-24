@@ -31,6 +31,12 @@ cd "$PROJECT_ROOT"
 # 版本号: 由构建环境注入 (CI 从 git tag 提取), 本地缺省 dev
 VERSION="${VOIDMEI_VERSION:-dev}"
 
+# data zip 源转为绝对路径 (stage_data 内部会 cd, 相对路径会失效)
+FMDATA_ZIP="${VOIDMEI_FMDATA_ZIP:-}"
+if [ -n "$FMDATA_ZIP" ]; then
+    FMDATA_ZIP="$(cd "$(dirname "$FMDATA_ZIP")" 2>/dev/null && pwd)/$(basename "$FMDATA_ZIP")"
+fi
+
 # 颜色输出 (不支持颜色的终端下 t decorative 字符无害)
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 log()  { echo -e "${GREEN}[build]${NC} $*"; }
@@ -183,10 +189,10 @@ cmd_exe() {
 stage_data() {
     local stage_data_dir="$1/data"
     mkdir -p "$stage_data_dir"
-    if [ -n "${VOIDMEI_FMDATA_ZIP:-}" ]; then
+    if [ -n "$FMDATA_ZIP" ]; then
         # CI: 解包裁剪版 data zip (zip 顶层为 data/)
-        [ -f "$VOIDMEI_FMDATA_ZIP" ] || { err "VOIDMEI_FMDATA_ZIP 不存在: $VOIDMEI_FMDATA_ZIP"; exit 1; }
-        (cd "$stage_data_dir/.." && unzip -q -o "$VOIDMEI_FMDATA_ZIP")
+        [ -f "$FMDATA_ZIP" ] || { err "VOIDMEI_FMDATA_ZIP 不存在: $FMDATA_ZIP"; exit 1; }
+        (cd "$stage_data_dir/.." && unzip -q -o "$FMDATA_ZIP")
         [ -d "$stage_data_dir/aces/gamedata/flightmodels" ] \
             || { err "data zip 内容异常: 缺少 data/aces/gamedata/flightmodels"; exit 1; }
     elif [ -d data/aces/gamedata/flightmodels ]; then
@@ -276,12 +282,17 @@ cmd_fmdata() {
         exit 1
     }
 
-    # 解包到临时目录 (纯文本 .blkx 输出)
-    log "wt_ext_cli 解包 $vromfs ..."
+    # wt_ext_cli 解包 (仅 flightmodels 子树, 数秒完成)
+    # --format BlkText: 输出 "名字:类型 = 值" 文本格式; --blk_extension blkx: 程序主加载路径
+    # (Controller/DrawFrame) 硬编码查找 .blkx 扩展名, 缺省的 .blk 不兼容
+    # --folder: 只解 vromfs 内的 gamedata/flightmodels 子树, 实测输出到
+    # <output>/aces.vromfs.bin_u/gamedata/flightmodels
+    log "wt_ext_cli 解包 flightmodels 子树 ..."
     rm -rf build/fmdata_unpack
-    "$wtcli" unpack_vromfs -o build/fmdata_unpack "$vromfs"
+    "$wtcli" unpack_vromf -i "$vromfs" -o build/fmdata_unpack \
+        --format BlkText --blk_extension blkx --folder gamedata/flightmodels --continue Quiet
+    local unpack_root="build/fmdata_unpack/aces.vromfs.bin_u"
 
-    local unpack_root="build/fmdata_unpack"
     [ -d "$unpack_root/gamedata/flightmodels" ] \
         || { err "解包结果异常: 缺少 gamedata/flightmodels (wt_ext_cli 版本可能滞后于游戏格式, 请检查其 releases)"; exit 1; }
 
@@ -291,16 +302,18 @@ cmd_fmdata() {
     mkdir -p data/aces/gamedata
     cp -r "$unpack_root/gamedata/flightmodels" data/aces/gamedata/flightmodels
 
-    # 生成 version 文件 (供 Blkx.getVersion() 显示 FM 数据版本), 探测多个来源
-    local wtver=""
-    for candidate in "$game_dir/version.txt" "$game_dir/_warthunder/version.txt" "$unpack_root/version" "$unpack_root/config/version"; do
-        if [ -f "$candidate" ]; then
-            wtver="$(tr -d '\r\n' < "$candidate")"
-            cp "$candidate" data/aces/version
-            break
-        fi
-    done
-    [ -n "$wtver" ] || warn "未找到游戏 version 文件, data/aces/version 未生成 (程序可容错运行)"
+    # 生成 version 文件 (供 Blkx.getVersion() 显示 FM 数据版本)
+    # 优先 WT_VERSION 显式指定; 缺省用 wt_ext_cli vromf_version 从 vromfs 二进制头读取
+    # (实测输出如 "2.57.1.103"; 游戏目录与解包输出均无现成 version 文件)
+    local wtver="${WT_VERSION:-}"
+    if [ -z "$wtver" ]; then
+        wtver="$("$wtcli" vromf_version -i "$vromfs" -f plain 2>/dev/null | tr -d '\r\n' | head -1)"
+    fi
+    if [ -n "$wtver" ]; then
+        printf '%s\n' "$wtver" > data/aces/version
+    else
+        warn "未读到游戏版本号 (建议设置 WT_VERSION 显式指定), data/aces/version 未生成 (程序可容错运行)"
+    fi
 
     # 统计并产出上传用的 data zip + manifest
     local blkx_count file_count total_bytes date
