@@ -76,7 +76,7 @@ public class Application {
 	public static String appName;
 	public static String defaultNumfontName = "Roboto";
 	public static String appTooltips;
-	// 版本号由构建时注入: build.sh jar 将 VOIDMEI_VERSION (CI 从 git tag 提取) 写入
+	// 版本号由构建时注入: build.py jar 将 VOIDMEI_VERSION (CI 从 git tag 提取) 写入
 	// MANIFEST 的 Implementation-Version, 此处运行时读取; 字段签名保持不变, 所有引用无需改动
 	public static String version = readVersion();
 	public static String httpHeader;

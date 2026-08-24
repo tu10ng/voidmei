@@ -14,31 +14,31 @@ VoidMei is a Java Swing telemetry overlay for War Thunder. It reads real-time fl
 
 ## Build Commands
 
-**统一构建入口**: `./script/build.sh`（bash 子命令式，Windows 在 git-bash/WSL 中执行，Linux 直接执行；CI 复用同一脚本）。**版本号由 `VOIDMEI_VERSION` 环境变量注入**（CI 从 git tag 提取，本地缺省 `dev`），发版无需改代码。
+**统一构建入口**: `python script/build.py`（Python 3.8+ 标准库实现，Windows cmd/PowerShell 直接执行，Linux/CI 行为一致；CI 复用同一脚本）。**版本号由 `VOIDMEI_VERSION` 环境变量注入**（CI 从 git tag 提取，本地缺省 `dev`），发版无需改代码。
 
 **Java 8 Required:** VoidMei strictly requires Java 8 (1.8.x). The Windows EXE enforces `maxVersion: 1.8.999` to prevent running on Java 9+, which has incompatible module changes.
 
 ```bash
 # 编译 src/ → bin/
-./script/build.sh compile
+python script/build.py compile
 
 # 运行单元测试 (全部或指定套件)
-./script/build.sh test              # all / atmosphere / piston / visibility / voicepack
-./script/build.sh test spitfire     # 需要 DATAMINE_ROOT 指向 WT 解包目录
+python script/build.py test              # all / atmosphere / piston / visibility / voicepack
+python script/build.py test spitfire     # 需要 DATAMINE_ROOT 指向 WT 解包目录
 
 # 打 jar (MANIFEST 注入版本号) / 打 exe (launch4j, 版本资源注入)
-./script/build.sh jar
-./script/build.sh exe
+python script/build.py jar
+python script/build.py exe
 
 # 组装完整分发包 → dist/VoidMei_v*.zip (含裁剪版 data, 剔除用户数据)
-./script/build.sh dist
+python script/build.py dist
 
 # 游戏版本更新后: 解包并裁剪 FM 数据 (更新项目内 ./data, 产出 data zip + manifest)
 # 游戏目录自动探测 (注册表 > Steam 库 > 常见路径, 缓存 .wt_game_dir), 也可 WT_GAME_DIR 显式指定
-./script/build.sh fmdata
+python script/build.py fmdata
 
 # 清理构建产物
-./script/build.sh clean
+python script/build.py clean
 
 # Mock server for testing (simulates War Thunder API)
 python3 script/mock_8111.py
@@ -60,7 +60,7 @@ VoidMei provides multiple ways to launch on Windows:
 
 **VoidMei.bat** searches Windows Registry for Java 8 (Oracle, Temurin, Zulu, Corretto, Microsoft), then falls back to `%JAVA_HOME%` or `PATH`.
 
-**voidmeil4j.xml** (Launch4j 配置模板，版本号为 `@VERSION@`/`@VERSION4@` 占位符，由 `build.sh exe` 注入):
+**voidmeil4j.xml** (Launch4j 配置模板，版本号为 `@VERSION@`/`@VERSION4@` 占位符，由 `build.py exe` 注入):
 - `minVersion: 1.8.0`, `maxVersion: 1.8.999` - Strictly enforces Java 8
 - `jreVersionErr` message guides users to download Eclipse Temurin 8
 - JVM flags: `-Dsun.java2d.uiScale=1 -Xms64m -Xmx320m`
@@ -84,11 +84,11 @@ VoidMei provides multiple ways to launch on Windows:
 1. 平时改动记入 `CHANGELOG.md` 的 `[Unreleased]` 段
 2. 发版时把 `[Unreleased]` 改名为 `[x.yyy] + 日期`
 3. `git tag v1.590 && git push origin v1.590` ← 发版指令 = 这一步
-4. CI（release.yml）: checkout tag 的 commit（不是 master HEAD）→ 从 `data` prerelease 拉取最新 FM 数据 → 同步 `更新日志.txt`（`script/release_notes.sh append-txt`，zip 内外一致）→ `build.sh dist` → 创建 Release（body 取自 CHANGELOG 对应段落）→ 回写 `更新日志.txt` 到 master（`docs(changelog): vX.YYY`，失败不阻塞发版）
+4. CI（release.yml）: checkout tag 的 commit（不是 master HEAD）→ 从 `data` prerelease 拉取最新 FM 数据 → 同步 `更新日志.txt`（`python script/release_notes.py append-txt`，zip 内外一致）→ `build.py dist` → 创建 Release（body 取自 CHANGELOG 对应段落）→ 回写 `更新日志.txt` 到 master（`docs(changelog): vX.YYY`，失败不阻塞发版）
 
 **游戏版本更新后（fmdata 更新，纯运维不触发发版）:**
 ```bash
-./script/build.sh fmdata   # 游戏目录自动探测 (或 WT_GAME_DIR=... 显式指定)
+python script/build.py fmdata   # 游戏目录自动探测 (或 WT_GAME_DIR=... 显式指定)
 gh release upload data dist/VoidMei_data_*.zip dist/data_manifest.json --clobber
 # 然后在已测试的 commit 上更新 CHANGELOG 并打新 tag (如 v1.591), 由人拍板
 ```

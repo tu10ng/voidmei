@@ -8,11 +8,11 @@
 
 # 编译方式1: 统一构建脚本 (推荐)
 **需确保 JDK 1.8 与 git-bash (Windows) 环境**
-- clone 本仓库后, 将 FM 数据放入 `data/` (运行 `./script/build.sh fmdata` 从游戏客户端解包生成, 或从 release 包中复制)
+- clone 本仓库后, 将 FM 数据放入 `data/` (运行 `python script/build.py fmdata` 从游戏客户端解包生成, 或从 release 包中复制)
 ```bash
-./script/build.sh compile   # 编译 src/ → bin/
-./script/build.sh test      # 运行单元测试
-./script/build.sh dist      # 组装完整分发包 → dist/VoidMei_v*.zip
+python script/build.py compile   # 编译 src/ → bin/
+python script/build.py test      # 运行单元测试
+python script/build.py dist      # 组装完整分发包 → dist/VoidMei_v*.zip
 java -jar VoidMei.jar       # 本地运行 (项目根即运行目录)
 ```
 
@@ -136,7 +136,7 @@ sudo pacman -Ss launch4j
 
 ``` bash
 pushd ~/project/voidmei
-./script/build.sh jar
+python script/build.py jar
 WINEPREFIX=~/downloads/.wine_voidmei wine ~/downloads/zulu8.90.0.19-ca-jre8.0.472-win_x64/bin/java.exe -jar VoidMei.jar
 popd
 

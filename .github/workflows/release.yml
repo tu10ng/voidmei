@@ -39,6 +39,11 @@ jobs:
           distribution: temurin
           java-version: '8'
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
       - name: 提取版本号
         id: ver
         env:
@@ -66,7 +71,7 @@ jobs:
           curl -sSL --retry 3 -o build/launch4j.tgz \
             "https://sourceforge.net/projects/launch4j/files/launch4j-3/3.50/launch4j-3.50-linux-x64.tgz/download"
           # 包内顶层为 launch4j/ (launch4j.jar + bin/windres 同级), 剥一层;
-          # 自带 launch4jc 是 CRLF shell 脚本 Linux 无法执行 → build.sh 走 jar 模式
+          # 自带 launch4jc 是 CRLF shell 脚本 Linux 无法执行 → build.py 走 jar 模式
           tar -xzf build/launch4j.tgz -C build/launch4j --strip-components=1
           test -f build/launch4j/launch4j.jar
 
@@ -77,7 +82,7 @@ jobs:
           mkdir -p build/fmdata
           if ! gh release download data --pattern "*.zip" --dir build/fmdata --clobber; then
             echo "::error::data Release 不存在或无附件, 无法组包。请先在本地执行:"
-            echo "::error::  WT_GAME_DIR=<游戏目录> bash script/build.sh fmdata"
+            echo "::error::  WT_GAME_DIR=<游戏目录> python script/build.py fmdata"
             echo "::error::  gh release create data dist/VoidMei_data_*.zip dist/data_manifest.json --prerelease"
             exit 1
           fi
@@ -88,7 +93,7 @@ jobs:
         env:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          bash script/release_notes.sh append-txt "$VERSION"
+          python script/release_notes.py append-txt "$VERSION"
           # 备份供最后回写 master 步骤使用 (checkout master 会丢弃工作区改动)
           cp 更新日志.txt build/更新日志.for-master.txt
 
@@ -98,13 +103,13 @@ jobs:
           VOIDMEI_FMDATA_ZIP: ${{ env.VOIDMEI_FMDATA_ZIP }}
           VOIDMEI_LAUNCH4J: build/launch4j/launch4j.jar
         run: |
-          bash script/build.sh dist
+          python script/build.py dist
           ls -lh dist/
 
       - name: 生成 Release notes (CHANGELOG.md 该版本段落)
         env:
           VERSION: ${{ steps.ver.outputs.version }}
-        run: bash script/release_notes.sh extract-md "$VERSION" > build/release_body.md
+        run: python script/release_notes.py extract-md "$VERSION" > build/release_body.md
 
       - name: dry-run 核验 (不发布)
         if: ${{ inputs.dry_run }}

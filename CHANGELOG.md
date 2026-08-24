@@ -14,7 +14,9 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
-- **工程流程重构**: 统一构建入口 `./script/build.sh`（compile/test/jar/exe/dist/fmdata/clean 子命令，Windows/Linux/CI 通用），删除 build.cmd/build.ps1/zip.sh 等漂移旧脚本
+- **构建脚本迁移 Python**: build.sh/release_notes.sh 重写为 build.py/release_notes.py（仅依赖 Python 3.8+ 标准库），消除 Windows 下 bash 环境差异问题（GOW 老工具集、PATH 缺 git\usr\bin、CRLF、非登录 shell），cmd 与 PowerShell 可直接执行
+- **fmdata 自动探测游戏目录**: 注册表 > Steam 库 (libraryfolders.vdf，兼容多盘) > 常见路径，命中后缓存 `.wt_game_dir`，无需手动设置 WT_GAME_DIR
+- **工程流程重构**: 统一构建入口 `python script/build.py`（compile/test/jar/exe/dist/fmdata/clean 子命令，Windows/Linux/CI 通用），删除 build.cmd/build.ps1/zip.sh 等漂移旧脚本
 - **版本号自动化**: 版本号由 git tag 驱动、构建时注入，发版不再需要修改代码提交 commit
 - **发版自动化**: push tag 触发 GitHub Actions 自动构建、打包并创建 Release
 - **分发包瘦身**: FM 数据裁剪为程序实际使用的 flightmodels 子树，包体积 104MB → 56MB；剔除误打包的 records/config 等用户数据
