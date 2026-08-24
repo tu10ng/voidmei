@@ -19,6 +19,7 @@
 #   VOIDMEI_FMDATA_ZIP dist 使用的现成裁剪版 data zip (CI 从 data prerelease 下载; 缺省用项目内 ./data)
 #   VOIDMEI_LAUNCH4J   launch4j 可执行文件或 launch4j.jar 的路径 (缺省从 PATH 及常见位置查找)
 #   WT_GAME_DIR        fmdata 子命令: War Thunder 游戏安装目录
+#                      (缺省自动探测: 注册表 > Steam 库 > 常见路径, 命中后缓存 .wt_game_dir)
 #   VOIDMEI_WT_EXT_CLI fmdata 子命令: wt_ext_cli 可执行文件路径 (缺省自动探测)
 #
 
@@ -254,14 +255,86 @@ cmd_dist() {
     log "分发包完成: dist/$zipname.zip ($(du -h "dist/$zipname.zip" | cut -f1))"
 }
 
+# ---------- fmdata 辅助: 自动探测 War Thunder 安装目录 ----------
+# Windows 路径 (C:\x\y 或 C:/x/y) → git-bash/posix 路径 (/c/x/y); 已是绝对路径则原样
+windows_path_to_unix() {
+    local p="${1//\\//}"     # 反斜杠统一转斜杠 (vdf 中为 \\ 双反斜杠转义, 一并处理)
+    case "$p" in
+        /*) echo "$p" ;;
+        [A-Za-z]:/*) echo "$(printf '%s' "/$(echo "${p:0:1}" | tr 'A-Z' 'a-z')/${p:3}" | tr -s '/')" ;;
+    esac
+}
+
+# 探测顺序: 注册表 (Gaijin 启动器) > Steam 库 (libraryfolders.vdf, 兼容多盘) > 常见路径;
+# 命中条件: 目录下存在 aces.vromfs.bin_gz 或 aces.vromfs.bin
+find_game_dir() {
+    local candidates=() p steam_root dir
+
+    # 1. 注册表: Gaijin Net Launcher 记录的游戏工作目录 (仅 Windows; Steam 版无此键, 失败静默)
+    if command -v reg >/dev/null 2>&1; then
+        local regout
+        if regout="$(reg query 'HKCU\Software\Gaijin\NetLauncher\Launchers\warthunder' //v WorkingDir 2>/dev/null)"; then
+            p="$(printf '%s' "$regout" | sed -n 's/.*REG_SZ[[:space:]]*//Ip' | tr -d '\r')"
+            [ -n "$p" ] && candidates+=("$(windows_path_to_unix "$p")")
+        fi
+    fi
+
+    # 2. Steam 库: vdf 枚举所有库路径 (含其他盘的 SteamLibrary); 每个入口兜底 common 默认路径
+    for steam_root in \
+        "/c/Program Files (x86)/Steam" \
+        "/d/Steam" "/e/Steam" "/d/Program Files (x86)/Steam" \
+        "$HOME/.steam/steam" "$HOME/.local/share/Steam"; do
+        [ -d "$steam_root" ] || continue
+        if [ -f "$steam_root/steamapps/libraryfolders.vdf" ]; then
+            while IFS= read -r p; do
+                [ -n "$p" ] && candidates+=("$(windows_path_to_unix "$p")/steamapps/common/War Thunder")
+            done < <(grep -o '"path"[[:space:]]*"[^"]*"' "$steam_root/steamapps/libraryfolders.vdf" \
+                     | sed 's/^"path"[[:space:]]*"//; s/"$//')
+        fi
+        candidates+=("$steam_root/steamapps/common/War Thunder")
+    done
+
+    # 3. Gaijin 启动器直装/其他常见位置
+    candidates+=(
+        "/c/Games/War Thunder" "/d/Games/War Thunder" "/e/Games/War Thunder"
+        "/c/Program Files (x86)/War Thunder" "/d/Program Files (x86)/War Thunder"
+    )
+
+    for dir in "${candidates[@]}"; do
+        if [ -f "$dir/aces.vromfs.bin_gz" ] || [ -f "$dir/aces.vromfs.bin" ]; then
+            echo "$dir"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # ---------- fmdata: 解包并裁剪 FM 数据 ----------
 cmd_fmdata() {
+    # 游戏目录解析: WT_GAME_DIR 显式指定 > 上次探测缓存 (.wt_game_dir) > 自动探测
     local game_dir="${WT_GAME_DIR:-}"
     if [ -z "$game_dir" ]; then
-        err "必须设置 WT_GAME_DIR 指向 War Thunder 游戏安装目录, 例:"
+        if [ -f .wt_game_dir ]; then
+            game_dir="$(tr -d '\r\n' < .wt_game_dir)"
+            if [ ! -d "$game_dir" ]; then
+                warn "缓存的游戏目录已失效: $game_dir, 删除缓存重新探测"
+                rm -f .wt_game_dir
+                game_dir=""
+            else
+                log "使用缓存的游戏目录: $game_dir (rm .wt_game_dir 可重新探测)"
+            fi
+        fi
+        if [ -z "$game_dir" ] && game_dir="$(find_game_dir)"; then
+            printf '%s\n' "$game_dir" > .wt_game_dir
+            log "自动探测到 War Thunder 安装目录: $game_dir (已缓存到 .wt_game_dir)"
+        fi
+    fi
+    [ -n "$game_dir" ] || {
+        err "未找到 War Thunder 安装目录, 请显式指定, 例:"
         err '  WT_GAME_DIR="C:/Program Files (x86)/Steam/steamapps/common/War Thunder" ./script/build.sh fmdata'
         exit 1
-    fi
+    }
+    log "游戏目录: $game_dir"
 
     # 定位 vromfs 包 (WT 客户端为 gzip 压缩格式 _gz)
     local vromfs=""

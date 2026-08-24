@@ -34,7 +34,8 @@ VoidMei is a Java Swing telemetry overlay for War Thunder. It reads real-time fl
 ./script/build.sh dist
 
 # 游戏版本更新后: 解包并裁剪 FM 数据 (更新项目内 ./data, 产出 data zip + manifest)
-WT_GAME_DIR=".../WarThunder" ./script/build.sh fmdata
+# 游戏目录自动探测 (注册表 > Steam 库 > 常见路径, 缓存 .wt_game_dir), 也可 WT_GAME_DIR 显式指定
+./script/build.sh fmdata
 
 # 清理构建产物
 ./script/build.sh clean
@@ -87,7 +88,7 @@ VoidMei provides multiple ways to launch on Windows:
 
 **游戏版本更新后（fmdata 更新，纯运维不触发发版）:**
 ```bash
-WT_GAME_DIR=".../WarThunder" ./script/build.sh fmdata
+./script/build.sh fmdata   # 游戏目录自动探测 (或 WT_GAME_DIR=... 显式指定)
 gh release upload data dist/VoidMei_data_*.zip dist/data_manifest.json --clobber
 # 然后在已测试的 commit 上更新 CHANGELOG 并打新 tag (如 v1.591), 由人拍板
 ```
