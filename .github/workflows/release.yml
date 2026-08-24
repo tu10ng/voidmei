@@ -84,14 +84,6 @@ jobs:
           ls -lh build/fmdata/
           echo "VOIDMEI_FMDATA_ZIP=$(ls "$(pwd)"/build/fmdata/*.zip | head -1)" >> "$GITHUB_ENV"
 
-      - name: 同步 更新日志.txt (使 zip 内外一致)
-        env:
-          VERSION: ${{ steps.ver.outputs.version }}
-        run: |
-          python script/release_notes.py append-txt "$VERSION"
-          # 备份供最后回写 master 步骤使用 (checkout master 会丢弃工作区改动)
-          cp 更新日志.txt build/更新日志.for-master.txt
-
       - name: 组装完整分发包
         env:
           VOIDMEI_VERSION: ${{ steps.ver.outputs.version }}
@@ -101,10 +93,10 @@ jobs:
           python script/build.py dist
           ls -lh dist/
 
-      - name: 生成 Release notes (CHANGELOG.md 该版本段落)
+      - name: 生成 Release notes (更新日志.txt 该版本条目块)
         env:
           VERSION: ${{ steps.ver.outputs.version }}
-        run: python script/release_notes.py extract-md "$VERSION" > build/release_body.md
+        run: python script/release_notes.py extract "$VERSION" > build/release_body.md
 
       - name: dry-run 核验 (不发布)
         if: ${{ inputs.dry_run }}
@@ -129,21 +121,3 @@ jobs:
           # "Publish release" (或 gh release edit "$TAG" --draft=false) 转正
           gh release create "$TAG" dist/*.zip dist/*.sha256 \
             --draft --title "VoidMei v$VERSION" --notes-file build/release_body.md
-
-      - name: 回写 更新日志.txt 到 master (失败不阻塞发版)
-        if: ${{ !inputs.dry_run }}
-        env:
-          VERSION: ${{ steps.ver.outputs.version }}
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin master
-          git checkout -B master origin/master
-          cp build/更新日志.for-master.txt 更新日志.txt
-          if git diff --quiet; then
-            echo "更新日志.txt 无变化, 跳过回写"
-          else
-            git add 更新日志.txt
-            git commit -m "docs(changelog): v$VERSION"
-            git push origin master || echo "::warning::push master 失败, 请手动同步 更新日志.txt"
-          fi
