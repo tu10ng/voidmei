@@ -496,7 +496,8 @@ def cmd_fmdata():
     DIST.mkdir(exist_ok=True)
     for old in DIST.glob("VoidMei_data_*.zip"):
         old.unlink()
-    data_zip = DIST / ("VoidMei_data_%s_%s.zip" % (wtver or "unknown", date))
+    # zip 名只带游戏版本号 (同版本重跑直接覆盖, 无需日期; 日期记录在 manifest)
+    data_zip = DIST / ("VoidMei_data_%s.zip" % (wtver or "unknown"))
     zip_tree(DATA, data_zip, "data")
 
     manifest = {
