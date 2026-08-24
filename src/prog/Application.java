@@ -466,39 +466,6 @@ public class Application {
 
 	}
 
-	public static void checkBlkxUpdate() {
-		HttpHelper httpClient = new HttpHelper();
-		try {
-			/* 异步请求 */
-			threadPool.submit(() -> {
-				String res;
-				res = httpClient
-						.sendGetURL("https://api.github.com/repos/" + owner + "/" + repository + "/releases/latest");
-				// debugPrint(res);
-				/* 截取tag_name */
-				int sidx = res.indexOf("tag_name");
-				int eidx = res.indexOf(",", sidx);
-				res = res.substring(sidx, eidx);
-				/* 正则匹配版本号 */
-				Pattern pt = Pattern.compile("[0-9].([0-9])*");
-				Matcher m = pt.matcher(res);
-				if (m.find()) {
-					String latestVersion = m.group(0);
-					prog.util.Logger.info("Update", "Latest remote version: " + latestVersion);
-					if (Double.parseDouble(version) < Double.parseDouble(latestVersion)) {
-						SwingUtilities.invokeLater(() -> showUpdateDialog(latestVersion));
-					}
-				}
-				return null;
-			});
-
-		} catch (Exception e) {
-			// 检查更新失败，使用统一异常处理
-			prog.util.ExceptionHelper.logAndContinue(e, "检查更新");
-		}
-
-	}
-
 	public static void silenceNativeHookLogger() {
 		// 禁用 JNativeHook 的日志输出 (Disable JNativeHook logging)
 		java.util.logging.Logger logger = java.util.logging.Logger.getLogger(GlobalScreen.class.getPackage().getName());
