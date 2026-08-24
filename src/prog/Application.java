@@ -76,7 +76,9 @@ public class Application {
 	public static String appName;
 	public static String defaultNumfontName = "Roboto";
 	public static String appTooltips;
-	public static String version = "1.583";
+	// 版本号由构建时注入: build.sh jar 将 VOIDMEI_VERSION (CI 从 git tag 提取) 写入
+	// MANIFEST 的 Implementation-Version, 此处运行时读取; 字段签名保持不变, 所有引用无需改动
+	public static String version = readVersion();
 	public static String httpHeader;
 	public static int voiceVolumn = 100;
 	public static String defaultFontName = "Microsoft YaHei UI";
@@ -433,7 +435,24 @@ public class Application {
 		);
 	}
 
+	/**
+	 * 从 jar 的 MANIFEST 读取构建时注入的版本号 (Implementation-Version)。
+	 * 本地未打 jar 直接运行 (java -cp bin) 时返回 "dev"。
+	 */
+	private static String readVersion() {
+		try {
+			String v = Application.class.getPackage().getImplementationVersion();
+			return v != null ? v : "dev";
+		} catch (Exception e) {
+			return "dev";
+		}
+	}
+
 	public static void checkUpdate() {
+		// dev 版 (本地未打 jar) 无版本号可比, 跳过更新检查, 避免 Double.parseDouble 崩溃
+		if ("dev".equals(version)) {
+			return;
+		}
 		HttpHelper httpClient = new HttpHelper();
 		try {
 			/* 异步请求 */
