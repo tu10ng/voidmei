@@ -142,13 +142,13 @@ SUITES = [
     ("voicepack", "VoicePackConfig Tests", "TestVoicePackConfig"),
 ]
 SUITE_ALIASES = {"atm": "atmosphere", "power": "piston", "vis": "visibility", "voice": "voicepack"}
-# 需要 Datamine FM 文件的验证套件: 名 -> (label, 测试类, 机型文件名)
-DATAMINE_SUITES = {
+# 真机 FM 端到端验证套件 (用项目内 data/ 的真实 blkx 跑功率曲线核对): 名 -> (label, 测试类, 机型)
+# data/ 不进 git (CI 无数据时自动跳过, 本地跑过 fmdata 即有)
+FM_SUITES = {
     "spitfire": ("Spitfire F24 Tests", "TestSpitfireF24Power", "spitfire_f24"),
-    "f24": ("Spitfire F24 Tests", "TestSpitfireF24Power", "spitfire_f24"),
     "tempest": ("Tempest Mk V Tests", "TestTempestMk5Power", "tempest_mkv"),
-    "mkv": ("Tempest Mk V Tests", "TestTempestMk5Power", "tempest_mkv"),
 }
+FM_SUITE_ALIASES = {"f24": "spitfire", "mkv": "tempest"}
 
 
 def cmd_test(suite="all"):
@@ -159,42 +159,43 @@ def cmd_test(suite="all"):
 
     passed = failed = 0
 
-    def run_one(label, cls):
+    def run_one(label, cls, extra_args=()):
         nonlocal passed, failed
         print("Running %s ..." % label)
-        if run_ok(["java", "-classpath", "bin", cls]):
+        if run_ok(["java", "-classpath", "bin", cls] + list(extra_args)):
             print("%s: PASSED" % label)
             passed += 1
         else:
             print("%s: FAILED" % label, file=sys.stderr)
             failed += 1
 
-    def run_datamine(label, cls, plane):
-        # 需要 Datamine 解包目录中的 FM 文件, 缺失则跳过 (不计失败)
+    def run_fm_test(label, cls, plane):
+        # 真机 FM 验证: 文件取自项目内 data/ (自己解包的 fmdata), 缺失则跳过 (不计失败)
         nonlocal passed, failed
-        root = Path(os.environ.get("DATAMINE_ROOT",
-                                   str(Path.home() / "projects" / "War-Thunder-Datamine-260205")))
-        fm_root = root / "aces.vromfs.bin_u" / "gamedata" / "flightmodels"
+        fm_root = DATA / "aces" / "gamedata" / "flightmodels"
         central = fm_root / (plane + ".blkx")
         fmfile = fm_root / "fm" / (plane + ".blkx")
         if not (central.is_file() and fmfile.is_file()):
-            warn("跳过 %s: 未找到 Datamine FM 文件 (设置 DATAMINE_ROOT 指向解包目录可启用)" % label)
+            warn("跳过 %s: 项目内 data/ 缺少 %s 的 FM 文件 (先运行 python script/build.py fmdata)" % (label, plane))
             return
-        run_one(label, cls)
+        run_one(label, cls, ["--central", central, "--fm", fmfile])
 
     suite = SUITE_ALIASES.get(suite, suite)
+    suite = FM_SUITE_ALIASES.get(suite, suite)
     if suite == "all":
         for _, label, cls in SUITES:
             run_one(label, cls)
+        for label, cls, plane in FM_SUITES.values():
+            run_fm_test(label, cls, plane)
     elif suite in dict((s[0], s) for s in SUITES):
         _, label, cls = next(s for s in SUITES if s[0] == suite)
         run_one(label, cls)
-    elif suite in DATAMINE_SUITES:
-        label, cls, plane = DATAMINE_SUITES[suite]
-        run_datamine(label, cls, plane)
+    elif suite in FM_SUITES:
+        label, cls, plane = FM_SUITES[suite]
+        run_fm_test(label, cls, plane)
     else:
         err("未知测试套件: %s (可选: all/%s/%s)" % (
-            suite, "/".join(s[0] for s in SUITES), "/".join(DATAMINE_SUITES)))
+            suite, "/".join(s[0] for s in SUITES), "/".join(sorted(FM_SUITES))))
         sys.exit(1)
 
     print("")

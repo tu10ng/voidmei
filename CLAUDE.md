@@ -24,7 +24,7 @@ python script/build.py compile
 
 # 运行单元测试 (全部或指定套件)
 python script/build.py test              # all / atmosphere / piston / visibility / voicepack
-python script/build.py test spitfire     # 需要 DATAMINE_ROOT 指向 WT 解包目录
+python script/build.py test spitfire     # 真机 FM 验证 (项目内 data/ 的 blkx, 无 data 自动跳过)
 
 # 打 jar (MANIFEST 注入版本号) / 打 exe (launch4j, 版本资源注入)
 python script/build.py jar
