@@ -83,7 +83,7 @@ VoidMei provides multiple ways to launch on Windows:
 1. 平时改动记入 `CHANGELOG.md` 的 `[Unreleased]` 段
 2. 发版时把 `[Unreleased]` 改名为 `[x.yyy] + 日期`
 3. `git tag v1.590 && git push origin v1.590` ← 发版指令 = 这一步
-4. CI（release.yml）: checkout tag 的 commit（不是 master HEAD）→ 从 `data` prerelease 拉取最新 FM 数据 → `build.sh dist` → 创建 Release（body 取自 CHANGELOG 对应段落）
+4. CI（release.yml）: checkout tag 的 commit（不是 master HEAD）→ 从 `data` prerelease 拉取最新 FM 数据 → 同步 `更新日志.txt`（`script/release_notes.sh append-txt`，zip 内外一致）→ `build.sh dist` → 创建 Release（body 取自 CHANGELOG 对应段落）→ 回写 `更新日志.txt` 到 master（`docs(changelog): vX.YYY`，失败不阻塞发版）
 
 **游戏版本更新后（fmdata 更新，纯运维不触发发版）:**
 ```bash
@@ -93,6 +93,8 @@ gh release upload data dist/VoidMei_data_*.zip dist/data_manifest.json --clobber
 ```
 
 **灰度测试（不影响用户）**: 打 `v1.590-rc1` 类 tag → CI 创建 prerelease（`/releases/latest` 跳过 prerelease，`checkUpdate()` 不弹）→ 测试同学验证 → 通过后同 commit 打正式 tag。rc 不通过即删 tag，正式版从未存在。
+
+**纯构建核验**: Actions 页手动触发 `release` workflow 并填写 version + 勾选 dry-run → 只构建产出 artifact（不创建 Release、不改任何远端状态）。
 
 **原则**: 发版永远是显式动作（打 tag）；data 上传不触发任何 workflow；旧版本 Release 一经发布不再改动。
 

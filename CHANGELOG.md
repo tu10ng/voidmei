@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+<!--
+版本规范 (Keep a Changelog):
+- 平时改动记入 [Unreleased] 段落
+- 发版时把 [Unreleased] 改名为 [x.yyy] 并补日期, 然后: git tag vx.yyy && git push origin vx.yyy
+- fmdata 更新版也占一个正常版本号 (如 1.591), 注明 "FM 数据更新至 WT x.y.z.w"
+- 不要用四段号 (v1.590.1): checkUpdate() 的正则会截断成 1.590, 用户收不到更新提示
+以下为历史归档段落 (未对应发版 tag)
+-->
+
+## [Unreleased]
+
+### Changed
+- **工程流程重构**: 统一构建入口 `./script/build.sh`（compile/test/jar/exe/dist/fmdata/clean 子命令，Windows/Linux/CI 通用），删除 build.cmd/build.ps1/zip.sh 等漂移旧脚本
+- **版本号自动化**: 版本号由 git tag 驱动、构建时注入，发版不再需要修改代码提交 commit
+- **发版自动化**: push tag 触发 GitHub Actions 自动构建、打包并创建 Release
+- **分发包瘦身**: FM 数据裁剪为程序实际使用的 flightmodels 子树，包体积 104MB → 56MB；剔除误打包的 records/config 等用户数据
+- **单一来源**: 项目目录即完整工作区（repo-as-workspace），废弃 Downloads 分发目录
+
 ## [Unreleased] - 2026-02-22
 
 ### Changed

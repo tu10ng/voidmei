@@ -178,7 +178,9 @@ cmd_exe() {
     sed -e "s/@VERSION@/$VERSION/g" -e "s/@VERSION4@/$v4/g" \
         script/voidmeil4j.xml > script/voidmeil4j.gen.xml
     case "$l4j" in
-        *.jar) java -jar "$l4j" script/voidmeil4j.gen.xml ;;
+        # headless: CI (ubuntu, 无显示) 下避免 AWT 初始化失败;
+        # launch4j Linux 发行包自带的 launch4jc 是 CRLF shell 脚本无法执行, 指向 jar 即可
+        *.jar) java -Djava.awt.headless=true -jar "$l4j" script/voidmeil4j.gen.xml ;;
         *)     "$l4j" script/voidmeil4j.gen.xml ;;
     esac
     log "EXE 打包完成: VoidMei.exe (版本: $VERSION)"
