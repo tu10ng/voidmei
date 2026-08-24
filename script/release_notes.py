@@ -18,6 +18,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SEP_LINE = "_______________________________________"
 
+# 灰度后缀 (-rc1/-beta/-test): 段落提取时剥掉, 复用基础版本的 changelog 段落。
+# 灰度 tag (v1.584-rc1) 与正式版 (v1.584) 是同一份内容, CHANGELOG 只维护 [1.584] 一个段落
+SUFFIX_RE = re.compile(r"-(?:rc|beta|test)\d*$", re.IGNORECASE)
+
+
+def base_version(ver):
+    """v1.584-rc1 / v1.584-test -> 1.584; 正式版本号原样返回。
+
+    用于 changelog 段落匹配与 更新日志.txt 条目幂等判断;
+    Release 标题等对外展示仍用完整版本号 (带后缀, 区分灰度渠道)。
+    """
+    return SUFFIX_RE.sub("", ver)
+
 
 def log_err(msg):
     print("[error] " + msg, file=sys.stderr)
@@ -28,17 +41,20 @@ def extract_section(ver):
 
     匹配用字符串全等并剥行尾 \\r —— 兼容 CRLF 工作区, 且避免把版本号
     当正则解释 (如 [1.584-test] 的 "4-t" 是 ASCII 范围, 会误匹配 [Unreleased])。
+    版本号先经 base_version() 规范化: -rc/-beta/-test 后缀复用基础版本段落。
     """
     try:
         text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     except FileNotFoundError:
         return []
-    hdr = "## [%s]" % ver
+    hdr = "## [%s]" % base_version(ver)
     out, flag, started = [], False, False
     for raw in text.splitlines():
         line = raw.rstrip("\r")
         if not flag:
-            if line == hdr:
+            # 段落头两种形式都认: "## [1.584]" 与 "## [1.584] - 2026-08-24"
+            # (发版后段落头按 Keep a Changelog 标准带日期, 全等匹配会漏)
+            if line == hdr or line.startswith(hdr + " "):
                 flag = True
             continue
         if line.startswith("## ["):
@@ -63,9 +79,9 @@ def build_block(ver, entries):
 def cmd_extract_md(ver):
     section = extract_section(ver)
     if not section:
-        log_err("CHANGELOG.md 中未找到 [%s] 段落" % ver)
+        log_err("CHANGELOG.md 中未找到 [%s] 段落" % base_version(ver))
         return 1
-    print("# VoidMei v%s" % ver)
+    print("# VoidMei v%s" % ver)  # 标题保留完整版本号, 区分灰度渠道
     print()
     print("\n".join(section))
     return 0
@@ -78,11 +94,13 @@ def read_lines_keep(path):
 
 
 def cmd_append_txt(ver, dry=False):
+    base = base_version(ver)
     entries = to_txt_entries(extract_section(ver))
     if not entries:
-        log_err("CHANGELOG.md 中未找到 [%s] 段落或其无列表条目" % ver)
+        log_err("CHANGELOG.md 中未找到 [%s] 段落或其无列表条目" % base)
         return 1
-    block = build_block(ver, entries)
+    # 条目行用基础版本号: rc 与正式版是同一内容, 更新日志.txt 只留一份
+    block = build_block(base, entries)
 
     if dry:
         print("\n".join(block))
@@ -95,6 +113,10 @@ def cmd_append_txt(ver, dry=False):
         path.write_bytes(("\r\n".join(block) + "\r\n").encode("utf-8"))
     else:
         lines = read_lines_keep(path)
+        # 幂等: rc 阶段已插入过 v{base} 块, 正式版重跑时跳过, 避免重复条目
+        if any(ln == "v%s" % base for ln in lines):
+            print("更新日志.txt 已有 v%s 条目, 跳过" % base)
+            return 0
         out, done = [], False
         for ln in lines:
             if not done and ln == SEP_LINE:
@@ -104,7 +126,7 @@ def cmd_append_txt(ver, dry=False):
         if not done:  # 无分隔线 (异常格式): 整块前置
             out = block + [""] + lines
         path.write_bytes(("\r\n".join(out) + "\r\n").encode("utf-8"))
-    print("更新日志.txt 已追加 v%s 条目" % ver)
+    print("更新日志.txt 已追加 v%s 条目" % base)
     return 0
 
 

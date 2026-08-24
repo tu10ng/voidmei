@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.584] - 2026-08-24
+
 ### Changed
 - **构建脚本迁移 Python**: build.sh/release_notes.sh 重写为 build.py/release_notes.py（仅依赖 Python 3.8+ 标准库），消除 Windows 下 bash 环境差异问题（GOW 老工具集、PATH 缺 git\usr\bin、CRLF、非登录 shell），cmd 与 PowerShell 可直接执行
 - **fmdata 自动探测游戏目录**: 注册表 > Steam 库 (libraryfolders.vdf，兼容多盘) > 常见路径，命中后缓存 `.wt_game_dir`，无需手动设置 WT_GAME_DIR
@@ -21,6 +23,13 @@ All notable changes to this project will be documented in this file.
 - **发版自动化**: push tag 触发 GitHub Actions 自动构建、打包并创建 Release
 - **分发包瘦身**: FM 数据裁剪为程序实际使用的 flightmodels 子树，包体积 104MB → 56MB；剔除误打包的 records/config 等用户数据
 - **单一来源**: 项目目录即完整工作区（repo-as-workspace），废弃 Downloads 分发目录
+- **FM 数据更新**: FM 数据更新至 WT 2.57.1.103
+
+### Removed
+- **商用字体不再提供**: DIN Pro 400 为商业授权字体，不再进入 git 仓库与分发包（规避版权风险）；开源字体照常内置，需要 DIN Pro 的用户可自行放置于 `fonts/` 目录
+
+### Fixed
+- **真机 FM 测试套件修复**: `test spitfire`/`test tempest` 改从项目内 `data/` 读取 FM 数据（无 data 自动跳过）；修复测试入口未初始化语言字符串导致的 NPE；Tempest Mk.V 期望功率随当前游戏数据同步调整
 
 ## [Unreleased] - 2026-02-22
 
