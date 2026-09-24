@@ -155,6 +155,8 @@ SUITES = [
     ("fmstore", "FM Manager Store Tests", "TestFMStore"),
     ("fmpaths", "FM Data Paths Tests", "TestFMDataPaths"),
     ("fmhandle", "FM Handle Tests", "TestFMHandle"),
+    # 真机 8111 退化帧场景 (2026-09-25 抓包快照): 空壳单键/部分缺失/indicators 残帧的防御行为
+    ("real8111", "Real 8111 Scenario Tests", "TestReal8111Scenarios"),
 ]
 SUITE_ALIASES = {"atm": "atmosphere", "power": "piston", "vis": "visibility", "voice": "voicepack"}
 # 真机 FM 端到端验证套件 (用项目内 data/ 的真实 blkx 跑功率曲线核对): 名 -> (label, 测试类, 机型)

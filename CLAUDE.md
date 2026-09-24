@@ -10,9 +10,12 @@
 # push和发起pr需要在用户的指挥下进行, 不能自行发起
 # commit要保持简洁. push或者pr前都要尽量按照功能合并, 不要零零散散
 # 你不用考虑什么时候打tag发版. 听用户的明确指令就行.
+# 打tag发版时, 先去github的release里看上一个版本的版本号是什么. 版本号一定要严格根据github的release递增, 递增基准是已发布的 Latest,不是 tag/draft. 打tag和更新更新日志时不要立刻commit&push, 一步一步等用户指令
 # 本地验证时可以写临时测试用例/脚本测试, 但是是否要保留并git提交最终一定要问用户! 很多测试用例是没有用的, 听用户的判断
+# **测试用例不擅自新增**: agent 缺少用户手里的场景上下文, 场景理解不透时写出的测试牛头不对马嘴、分不清等价类 (2026-09-25 哨兵值场景测试返工: 同一数据形态在不同局被标成两个矛盾的场景, 五个资产只留空壳帧一个)。要加测试时等用户明确指示怎么加
 # 历史上发现的容易踩坑的地方:
  - 直升机有的有可释放起落架, 有的是固定起落架
+ - 战雷 8111 状态转换窗口的退化帧形态 (2026-09-25 真机抓包, f4u-4b): 选机/载入/RTB 期 state 发单键 `{"valid": false}` 空壳帧; 载入后有一段幽灵帧 (state 是上一局冻结的全量真数据, indicators 只剩 3 键 type=dummy_plane, 靠 DUMMY_PLANE 检查挡住); 空中出生从按出击到出生 ~17 秒是 27 键占位帧 (缺 AoA/AoS/Ny/水温, IAS=0/RPM=600, indicators 温度=-273.15 绝对零度); RTB 后 Ny/AoA/AoS 可单独缺失十几秒; J3 后 ~11 秒仍是真实值 (死亡回放, 油门残留/RPM 衰减), 哨兵守卫拦不住, 由死亡检测收口。防线: State/Indicators isSingleKeyFrame 丢弃空壳帧、playerLive 类判定用 >0、VoiceWarning 各告警消费原始字段前加哨兵守卫、formatDataAsStrings 哨兵显示 "-"。**已拍板不做**: 出生等待占位帧的整帧丢弃——"哪个机型在什么时机缺哪些键"是战雷侧实现行为, 无契约可依 (机型间也无等价类可言, 先例: P-63 无 RPM throttle 键), 抽样归纳不出可靠判据, 收益小不投入。新增消费 8111 原始字段的判断必须防哨兵值
 
 # CLAUDE.md
 
@@ -32,7 +35,7 @@ Java 8 Swing 遥测悬浮窗（War Thunder HUD overlay）。轮询游戏本地 H
 python script/build.py compile   # 编译 src/ → bin/
 python script/build.py run       # 本地运行 (bin/ 缺失自动编译)
 python script/build.py test      # 全部单元测试; test <套件> 跑指定套件
-                                #   (atmosphere/piston/visibility/voicepack/fmstore/fmpaths/fmhandle/e2e)
+                                #   (atmosphere/piston/visibility/voicepack/fmstore/fmpaths/fmhandle/real8111/e2e)
 python script/build.py test spitfire  # 真机 FM 验证 (项目内 data/ 的 blkx, 无 data 自动跳过)
                                 #   spitfire / tempest / fuzz-blkx (blkx 变异 fuzz)
 python script/build.py jar       # 打 jar (MANIFEST 注入版本号)
@@ -41,7 +44,8 @@ python script/build.py dist      # 组装分发包 → dist/VoidMei_v*.zip (含�
 python script/build.py fmdata    # 游戏版本更新后: 解包并裁剪 FM 数据 (游戏目录自动探测, WT_GAME_DIR 可显式指定)
 python script/build.py clean     # 清理构建产物
 
-# mock server (模拟 8111 API, 场景 s1~s5 见 script/mock_scenarios/)
+# mock server (模拟 8111 API, 场景 s1~s5 见 script/mock_scenarios/; snapshots/real_empty_shell
+#   为真机抓包的空壳单键帧快照, 端点体按战雷单行原文保真存储, real8111 套件用)
 python3 script/mock_8111.py serve --port 8111 --scenario s5_missing_fm
 
 # FM 端到端回归 (起 mock + 应用跑 N 秒 + 日志断言 A1~A6)
@@ -104,6 +108,8 @@ python script/build.py fmdata-upload
 - **收录门槛**：只收**用户可感知**且有出错空间的场景（复杂算法/长传递链/机型前提分支），纯透传显示不收，纯系统层指标（如 TCP 连接数/TIME_WAIT——用户看不到，回归靠 mock/e2e 白盒覆盖）不收；**测试同学必须能自行触发**（依赖"云端发新数据"之类前置不受控的场景不收——agent 用 mock+改本地数据验证一次即可，不进手册）；预期必须可判定，"合理/正常/随x变化"这类看不出错的措辞不要
 - **禁止进手册**：场景编号、数据依赖字段名、实现细节（类名/配置键）、操作列里的版本备注、规则解释与元信息（"双份"）——这些只写在 CLAUDE.md。版本号只出现在测试版本列，且只填真机验证过的
 - **写完必须做纯审美审查**（重点，单独一步）：只对照上面的文体标准逐行过——"正常/合理"改"没问题"或删、空话（"试XX功能"）、冗余副词、元信息、占位机型、表格断裂。**这一步不做事实正确性核查**（机型文件是否存在/代码行为/配置项），内容对错是另一回事
+- **改完代码更新手册时必须做影响面审视**：除新增/修改的场景外，还要列出本次改动波及的**既有场景**并明确告知用户哪些需要重测——状态流/生命周期类改动（数据无效跳过计算、跳过发事件）要追所有仍在运行的消费者（告警独立循环/事件订阅者/记录器），"生产者停摆"必然带来"消费者状态冻结"风险，必须预判并提示验证（2026-09-25 教训: else 分支停算后增压器告警冻结循环响，手册没提示重测，用户靠耳朵发现回归）
+- **待测试标记**：新版本需要测试的场景（新增 + 被改动波及的既有），在测试版本列标 **`待测试`**；用户真机验证后把标记替换为版本号。版本列空 = 未波及或未登记的历史场景，`待测试` = 本次改动后需要过一遍
 
 ## 架构
 

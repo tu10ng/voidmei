@@ -78,6 +78,13 @@ public class State {
 		if (valid == null) {
 			return -1;
 		}
+		// 空壳单键帧 ({"valid": true}, 战雷选机/返回基地等转换窗口实测): 字段全缺失会
+		// 被解析成哨兵 -65535, 污染 playerLive 判定与语音告警, 按无效帧丢弃。
+		// 注意返回 0 而非 -1: -1 会让 Service 误判连接故障翻转轮询端口, 空壳是游戏正常行为
+		if (StringHelper.isSingleKeyFrame(buf)) {
+			flag = false;
+			return 0;
+		}
 		if (valid.equals("true")) {
 			// 无异常的
 			flag = true;

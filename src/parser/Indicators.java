@@ -68,6 +68,12 @@ public class Indicators{
 	public void update(String buf) {
 		valid = StringHelper.getString(buf, "valid");
 		army = StringHelper.getString(buf, "army");
+		// 空壳单键帧 (实测战雷转换窗口 indicators 发 {"valid": false}): 与 State 同防御,
+		// 防止单键 {"valid": true} 形态把全字段哨兵 -65535 灌进 UI/告警
+		if (StringHelper.isSingleKeyFrame(buf)) {
+			flag = false;
+			return;
+		}
 		// 防御加固: army 字段缺失 (响应截断/畸形 JSON) 时 getString 返回 null,
 		// 原代码 army.equals("tank") 会抛 NullPointerException; 字面量前置统一判空
 		if (valid != null && valid.equals("true") && !"tank".equals(army)){

@@ -1736,7 +1736,8 @@ public class Service implements Runnable, ui.model.TelemetrySource {
 			if (sState.flag && sIndic.flag) {
 
 				/* 修复录像中没法使用的问题 */
-				if ((!sIndic.type.equals("DUMMY_PLANE")) && ((sState.totalThr != 0) || (sState.RPM != 0))) {
+				// 推力/转速真实值非负, 用 >0 判: 哨兵 -65535 (字段缺失) 不再被误当"有动力"
+				if ((!sIndic.type.equals("DUMMY_PLANE")) && ((sState.totalThr > 0) || (sState.RPM > 0))) {
 					if (playerLive == false) {
 						if (!portOcupied)
 							httpClient.getReqMapInfoResult(Application.requestDest);
@@ -1790,9 +1791,18 @@ public class Service implements Runnable, ui.model.TelemetrySource {
 					}
 				}
 			} else {
+				// 无效帧 (空壳单键/valid=false): 仿真状态作废。
+				// playerLive 必须归 false: 否则 J3 返回基地后 calculate 停转, playerLive 冻结 true,
+				// VoiceWarning 各数据门仍开, 临终越限值 (大过载/低油压) 会循环误报;
+				// 事件驱动的增压器告警同理会把退出前的 mismatch=true 冻结住循环播, 这里清掉并广播取消
+				playerLive = false;
+				if (compressorStageMismatch) {
+					compressorStageMismatch = false;
+					publishFlightDataEvent();
+				}
+
 				// 状态置为等待游戏开始（状态1）
 				// c.changeS2();//连接成功等待游戏开始
-
 				c.S4toS1();
 				// 等待游戏开始
 				ExceptionHelper.sleepQuietly(500);

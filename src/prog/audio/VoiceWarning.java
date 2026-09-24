@@ -7,6 +7,7 @@ import prog.config.ConfigProvider;
 import prog.fm.FMHandle;
 import prog.fm.FMManager;
 import prog.util.Logger;
+import prog.util.StringHelper;
 
 import java.io.File;
 import java.io.IOException;
@@ -668,6 +669,10 @@ public class VoiceWarning implements Runnable {
      * 原位置：run() 第 490-492 行
      */
     private void checkBrakeWarning(long t) {
+        // 哨兵守卫: 字段缺失 (-65535) 时 gear 恒小于 100, 会误报; 数据无效不判
+        if (st.gear == StringHelper.iInvalid || st.airbrake == StringHelper.iInvalid) {
+            return;
+        }
         // 起落架未放下但减速板已展开
         if (st.gear < 100 && st.airbrake >= 90) {
             brakeWarn.playOnce(t);
@@ -704,6 +709,10 @@ public class VoiceWarning implements Runnable {
      * 原位置：run() 第 508-512 行
      */
     private void checkVarioWarning(long t) {
+        // 哨兵守卫: Vy 缺失 (-65535) 恒满足 <=-8, 会误报
+        if (st.Vy == StringHelper.fInvalid) {
+            return;
+        }
         // 起落架放下且下降率过高
         if (isGearAlive && st.gear >= 50 && st.Vy <= -8) {
             varioWarn.playOnce(t);
@@ -756,6 +765,11 @@ public class VoiceWarning implements Runnable {
             return false;
         }
 
+        // 哨兵守卫: Vy/高度缺失 (-65535) 时比较式恒成立, 会误报
+        if (st.Vy == StringHelper.fInvalid || st.heightm == StringHelper.fInvalid) {
+            return false;
+        }
+
         // 下降率等于高度的 10 分之一会触发警告
         if (st.Vy < -st.heightm / 10.0f) {
             heightWarn.playOnce(t);
@@ -804,6 +818,10 @@ public class VoiceWarning implements Runnable {
      * 原位置：run() 第 604-609 行
      */
     private void checkInvertedFlightWarning(long t) {
+        // 哨兵守卫: Ny 缺失 (-65535) 恒满足 <0, thrust 缺失恒满足 <50, 会误报倒飞断油
+        if (st.Ny == StringHelper.fInvalid || st.thrust[0] == StringHelper.iInvalid) {
+            return;
+        }
         // 倒飞时油门大但推力低
         if (st.Ny < 0 && st.throttle > 50) {
             if (st.thrust[0] < 50) {
@@ -817,6 +835,11 @@ public class VoiceWarning implements Runnable {
      * 原位置：run() 第 612-628 行
      */
     private void checkRPMWarning(long t) {
+        // 哨兵守卫: RPM 缺失 (-65535) 为负, 恒满足"转速低"比较式, 会误报
+        if (st.RPM == StringHelper.iInvalid) {
+            return;
+        }
+
         // 倒飞时不检测转速
         if (st.Ny < 0 && st.throttle > 50 && st.thrust[0] < 50) {
             return;
@@ -847,6 +870,11 @@ public class VoiceWarning implements Runnable {
             return;
         }
 
+        // 哨兵守卫: IAS 缺失 (-65535) 恒满足 <=失速速度, 会误报
+        if (st.IAS == StringHelper.iInvalid) {
+            return;
+        }
+
         // 没放下起落架、有下降率、速度低于失速速度
         if (xS.playerLive && st.gear == 0 && st.Vy != 0 &&
             xS.getStallSpeed() != 0 && st.IAS <= xS.getStallSpeed()) {
@@ -861,6 +889,11 @@ public class VoiceWarning implements Runnable {
      * @return true 如果是致命告警
      */
     private boolean checkLoadFactorWarning(long t) {
+        // 哨兵守卫: Ny 缺失 (-65535) 恒小于负过载限, 会持续误报 (RTB 后 Ny 缺失 13 秒实测)
+        if (st.Ny == StringHelper.fInvalid) {
+            return false;
+        }
+
         // 使用动态阈值
         double currentNyMin = nyWarningLine0;
         double currentNyMax = nyWarningLine1;
