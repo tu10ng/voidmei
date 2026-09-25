@@ -1,0 +1,65 @@
+# 文档站流水线: push master (docs 相关路径) → mkdocs build → 发布 GitHub Pages
+# 站点: https://matrixsukhoi.github.io/voidmei/
+# 启用前需在仓库 Settings → Pages → Source 选 "GitHub Actions" (一次性手动)
+# paths 过滤: Java 提交不空跑; workflow_dispatch 兜底 (fork 验证时对分支手动触发也走这里)
+name: pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'script/copy_docs_images.py'
+      - 'requirements-docs.txt'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write          # 部署 Pages 必需
+  id-token: write       # deploy-pages 的 OIDC 认证必需
+
+# 同一时间只跑一个 Pages 部署, 后到的排队不取消 (与 GitHub 官方模板一致)
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: 安装文档工具链 (版本锁定, 与本地 requirements-docs.txt 同源)
+        run: pip install -r requirements-docs.txt
+
+      - name: Build (strict: 任何警告/死链即失败)
+        run: mkdocs build --strict
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

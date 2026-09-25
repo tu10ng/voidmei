@@ -1,0 +1,111 @@
+# VoidMei 使用手册 (GitHub Pages) — Material for MkDocs
+# 本地预览: mkdocs serve → http://127.0.0.1:8000  (改 image/ 下图片时加 --watch image)
+# 部署: .github/workflows/pages.yml
+# 图片: script/copy_docs_images.py 构建前从 image/ 复制到 docs/assets/img/ (gitignore)
+
+site_name: VoidMei 使用手册
+site_description: War Thunder 实时飞行数据 HUD —— 安装、功能详解、语音告警与计算原理
+site_url: https://matrixsukhoi.github.io/voidmei/
+repo_url: https://github.com/matrixsukhoi/voidmei
+repo_name: matrixsukhoi/voidmei
+edit_uri: edit/master/docs/
+copyright: Copyright &copy; VoidMei 贡献者 · GPL-3.0
+
+theme:
+  name: material
+  language: zh
+  favicon: assets/img/16x16.png
+  icon:
+    logo: material/airplane
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: 切换到深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: 切换到浅色模式
+  features:
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.top
+    - toc.follow
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+
+# 中文搜索: jieba 服务端分词建索引 (需单独 pip install, 见 requirements-docs.txt);
+# separator 含零宽空格 U+200B ( [\s 后那个不可见字符) 是 jieba 分词落地的必要条件,
+# 取自 Material 官方站点自用配置
+plugins:
+  - search:
+      lang: zh
+      separator: '[\s​\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+
+hooks:
+  - script/copy_docs_images.py
+
+markdown_extensions:
+  # 注意: 不要启用 pymdownx.betterem 的 smart 模式——它要求强调标记满足英文 word-boundary,
+  # 中文里 "间**线性插值**" 这种 ** 紧贴汉字的加粗会整段失效 (2026-09-25 踩坑)
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+      # 默认 slugify 会剥掉中文 (标题 id 退化为 _2/_3 序号), 换 pymdownx 的 unicode slugify 保留中文锚点
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  # Material 图标语法 :material-xxx: 依赖 emoji 扩展
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+# MathJax 3 (官方配方); 公式仅计算原理页使用
+extra_javascript:
+  - javascripts/math.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/matrixsukhoi/voidmei
+    - icon: fontawesome/brands/bilibili
+      link: https://space.bilibili.com/14606916
+
+nav:
+  - 首页: index.md
+  - 安装: install.md
+  - 快速上手: quickstart.md
+  - 功能详解:
+      - MiniHUD 图解: features/minihud.md
+      - 智能算法: features/algorithms.md
+      - 语音告警: features/voice.md
+      - FM 数据: features/fmdata.md
+      - 个性化定制: features/customize.md
+  - 计算原理: theory.md
+  - 常见问题: faq.md
+  - 版本亮点: changelog.md

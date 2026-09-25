@@ -53,6 +53,14 @@ python script/build.py test e2e          # 两场景 (s2/s5) 各 20 秒; 8111 �
 bash script/e2e_fm.sh --scenario s5_missing_fm --duration 120   # 单场景长跑 (慢, 不进 test all)
 ```
 
+文档站 (GitHub Pages, **独立于 build.py**——引入了 pip 依赖, 不挂进统一入口; 依赖锁 `requirements-docs.txt`, 本地建议 venv):
+
+```bash
+pip install -r requirements-docs.txt     # mkdocs-material + jieba (中文搜索分词)
+mkdocs serve                             # 本地预览 http://127.0.0.1:8000 (改 image/ 图片时加 --watch image)
+mkdocs build --strict                    # CI 同款严格构建 (死链/警告即败) → site/ (gitignore)
+```
+
 ## 目录职责（单一来源架构）
 
 | 路径 | 角色 |
@@ -61,6 +69,7 @@ bash script/e2e_fm.sh --scenario s5_missing_fm --duration 120   # 单场景长�
 | `dist/` | 构建产物（gitignore） |
 | GitHub `v*` Release | 唯一分发渠道（CI 自动构建） |
 | GitHub `data` prerelease | fmdata 云端存储层（CI 组包 + **客户端自动更新源**：`FMDataUpdater` 启动静默检查/下载/替换/即时生效；`--prerelease` 保证 `checkUpdate()` 看不到，release 直链匿名可下） |
+| `docs/` + `mkdocs.yml` | 使用手册站点（Material for MkDocs，发布于 matrixsukhoi.github.io/voidmei，`.github/workflows/pages.yml` 部署）。站点图片由 `script/copy_docs_images.py` 在构建期从 `image/` 复制到 `docs/assets/img/`（gitignore）——与 README 共用同一份图片单一来源；**README/使用说明.txt 等旧文档仍完整保留并行**，站点内容独立维护（语音告警条件以 ui_layout.cfg 的 voice 行为准，旧 txt 已过时） |
 
 **资源管理（按"丢了怎么恢复"分类）**：源码+自有资产进 git；`data/` 是派生数据不进 git（wt_ext_cli 从游戏客户端再生成）；运行时数据（records/ config/ ui_layout.user.cfg）gitignore。`fonts/DIN Pro 400.otf` 为商业字体，gitignore 排除、不分发。
 

@@ -35,5 +35,10 @@ script/voidmeil4j.gen.xml
 __pycache__/
 *.pyc
 
+# MkDocs 文档站（构建产物 + hook 生成图片 + 本地 venv）
+site/
+docs/assets/img/
+.venv/
+
 # 本地进行中的 Rust 重写工作区（未入库）
 crates/
