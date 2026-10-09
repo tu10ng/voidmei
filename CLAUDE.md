@@ -25,6 +25,8 @@ VoidMei 的开发指引。原则：只记录代码里看不出来的知识（命
 
 Java 8 Swing 遥测悬浮窗（War Thunder HUD overlay）。轮询游戏本地 HTTP API（127.0.0.1:8111，~10Hz）解析实时飞行数据，结合离线拆包的 FM（.blkx）文件计算派生指标，以半透明 overlay 呈现。约 159 个 Java 文件。
 
+**2026-10-09 起进入维护模式**：不开发新功能，仅保留 fmdata 数据适配与 bug 修复。继任项目 [wp8f](https://github.com/matrixsukhoi/wp8f)（Rust 重写），README 顶部有强引导公告。
+
 **严格 Java 8**（1.8.x）：EXE 由 launch4j 强制 `maxVersion: 1.8.999`；JVM flags `-Dsun.java2d.uiScale=1 -Xms64m -Xmx320m`（见 voidmeil4j.xml）。
 
 ## 构建命令

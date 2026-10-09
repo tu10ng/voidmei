@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> **VoidMei 已进入维护模式。** 不再开发新功能，仅保留游戏版本更新后的 FM 数据适配与 bug 修复；现有版本可继续正常使用。
+> 后续开发已转移至全新重写的 **[WP8F](https://github.com/matrixsukhoi/wp8f)**：Rust 原生实现，无需 JRE，CPU 与内存占用大幅降低，推荐使用。
+
 # VoidMei - 战争雷霆8111端口Java图形前端
 
 [![build](https://github.com/matrixsukhoi/voidmei/actions/workflows/build.yml/badge.svg)](https://github.com/matrixsukhoi/voidmei/actions/workflows/build.yml)
@@ -139,7 +143,7 @@ voidmei/
 
 ## 贡献
 
-欢迎 issue 与 PR。提交前请确保 `python script/build.py test` 全部通过。
+项目已进入维护模式，不再接受新功能。bug 报告与修复性 PR 欢迎，提交前请确保 `python script/build.py test` 全部通过。
 
 ## 支持与联系
 
